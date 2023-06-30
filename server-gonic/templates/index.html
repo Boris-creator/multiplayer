@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Index page</title>
+  </head>
+  <body>
+    <h1>Slava Ukraine</h1>
+    <pre id="output"></pre>
+    <script>
+      const members = []
+
+      function handleMessage(socket, msg) {
+        const data = JSON.parse(msg.data)
+        switch (data.eventName) {
+          case "join":
+            members.splice(0, members.length, ...data.eventPayload.users)
+            console.log(members)
+            socket.send(JSON.stringify({
+              eventName: "message",
+              eventPayload: 
+              {
+                userID: members[0].clientID,
+                message: "hiiii"
+              }
+          }))
+        }
+      }
+
+      fetch("/api/login", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify({
+          username: "Stepan",
+          password: "qwerty"
+        })
+      })
+      .then((response) => {
+        const token = response.headers.get("Authorization")?.split(" ")[1]
+        const url = new URL("ws://localhost:3003/ws")
+        url.searchParams.append("token", token)
+        const socket = new WebSocket(url.toString());
+        socket.onmessage = message => {
+          console.log(message)
+          handleMessage(socket, message)
+        }
+        socket.onopen = function() {
+          console.log("Shit...")
+        }
+      })
+    </script>
+  </body>
+</html>

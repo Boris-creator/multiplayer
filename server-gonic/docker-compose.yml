@@ -1,0 +1,27 @@
+version: '3.4'
+services:
+  db:
+    build: .
+    image: postgres:14.8
+    restart: always
+    environment:
+      - POSTGRES_USER=boris
+      - POSTGRES_PASSWORD=qwerty
+      - POSTGRES_DB=gin
+    ports:
+     - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U boris -l | grep ging | wc -l || exit 1"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s  
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      
+volumes:
+  db:
+    driver: local
