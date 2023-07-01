@@ -142,7 +142,6 @@ func validateEvent(e SocketEventStruct) bool {
 		return isValid
 	}
 	if e.EventName == "move" {
-		fmt.Println(e.EventPayload)
 		validator.StringRule("x", "float|between:-1,1")
 		validator.StringRule("y", "float|between:-1,1")
 		isValid := validator.Validate()

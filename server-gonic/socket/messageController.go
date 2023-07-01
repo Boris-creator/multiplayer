@@ -1,15 +1,21 @@
 package socket
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"shooter/game"
 
+	"github.com/go-redis/redis/v8"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
 func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStruct) {
+	ctx := context.Background()
+	redisGameKey := "game"
+
 	var socketEventResponse SocketEventStruct
 	if !validateEvent(socketEventPayload) {
 		return
@@ -51,11 +57,22 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		log.Printf("Game Join Event triggered")
 
 		hub := client.hub
-		if slices.Contains(maps.Keys(hub.game.Locations), client.clientID) {
+		hubGame := game.NewGame()
+		savedGameState, err := hub.db.Get(ctx, redisGameKey).Result()
+		if err != redis.Nil {
+			hubGame.UnmarshalBinary([]byte(savedGameState))
+		}
+		if slices.Contains(maps.Keys(hubGame.Locations), client.clientID) {
 			return
 		}
 
-		hub.game.Locations[client.clientID], _ = hub.game.RandomLocation()
+		hubGame.Locations[client.clientID], _ = hubGame.RandomLocation()
+
+		saved, _ := hubGame.MarshalBinary()
+		saveError := hub.db.Set(ctx, redisGameKey, saved, 0)
+		if saveError.Err() != nil {
+			fmt.Println(saveError)
+		}
 
 		var eventPayload map[string]interface{}
 
@@ -67,13 +84,13 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 						UserID:   client.userID,
 						UserName: client.userName,
 					},
-					Position: hub.game.Locations[client.clientID],
+					Position: hubGame.Locations[client.clientID],
 				},
 			},
 			Disconnecting: []UserStruct{},
 		}
 		var connected = []UserGameLocation{}
-		for clientId, position := range hub.game.Locations {
+		for clientId, position := range hubGame.Locations {
 			connected = append(connected, UserGameLocation{
 				User:     getUserByClientID(hub, clientId),
 				Position: position,
@@ -112,17 +129,28 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		EmitToSpecificClient(client.hub, socketEventResponse, selectedUserID)
 
 	case "move":
-
 		log.Printf("Move Event triggered")
 
+		hubGame := game.NewGame()
+		savedGameState, err := client.hub.db.Get(ctx, redisGameKey).Result()
+		if err != redis.Nil {
+			hubGame.UnmarshalBinary([]byte(savedGameState))
+		}
 		stepX := int(socketEventPayload.EventPayload["x"].(float64))
 		stepY := int(socketEventPayload.EventPayload["y"].(float64))
-		_, isInGame := client.hub.game.Locations[client.clientID]
+		_, isInGame := hubGame.Locations[client.clientID]
 		if !isInGame {
 			return
 		}
 
-		updatedPosition := client.hub.game.MovePlayer(client.clientID, game.Position{X: stepX, Y: stepY})
+		updatedPosition := hubGame.MovePlayer(client.clientID, game.Position{X: stepX, Y: stepY})
+
+		saved, _ := hubGame.MarshalBinary()
+		saveError := client.hub.db.Set(ctx, redisGameKey, saved, 0)
+		if saveError.Err() != nil {
+			fmt.Println(saveError)
+		}
+
 		socketEventResponse.EventName = "move"
 		socketEventResponse.EventPayload = map[string]interface{}{
 			"x":        updatedPosition.X,

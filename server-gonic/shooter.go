@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 )
 
@@ -31,7 +32,16 @@ func main() {
 	corsConfig.AllowOrigins = []string{"http://localhost:3001"}
 	r.Use(cors.New(corsConfig))
 
-	hub := socket.NewHub()
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_PORT"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+	if redisClient == nil {
+		log.Fatalf("Error connecting Redis")
+	}
+
+	hub := socket.NewHub(*redisClient)
 	go hub.Run()
 
 	r.GET("/", func(c *gin.Context) {

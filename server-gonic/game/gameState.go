@@ -1,8 +1,8 @@
 package game
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -30,7 +30,6 @@ func (state *GameState) MovePlayer(player string, step Position) *Position {
 	}
 
 	for playmate, position := range state.Locations {
-		fmt.Println(position, location)
 		if playmate == player {
 			continue
 		}
@@ -66,4 +65,18 @@ func NewGame() *GameState {
 	locations := map[string]*Position{}
 
 	return &GameState{Locations: locations}
+}
+
+func (state *GameState) MarshalBinary() ([]byte, error) {
+	gameLocations := map[string]interface{}{}
+	for clientId, position := range state.Locations {
+		gameLocations[clientId] = *position
+	}
+	return json.Marshal(map[string]interface{}{
+		"locations": gameLocations,
+	})
+}
+
+func (state *GameState) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, state)
 }
