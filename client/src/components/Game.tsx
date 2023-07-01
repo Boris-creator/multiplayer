@@ -6,11 +6,11 @@ import { createSignal, Match, Switch } from "solid-js";
 const Game: Component = () => {
   const [isInGame, toogle] = createSignal(false);
   return (
-    <div class="flex h-[100vh]">
-      <div class="w-[calc(100vw-100vh)] h-[100vh] overflow-y-auto bg-[gray]">
+    <div class="flex flex-col-reverse justify-between lg:flex-row h-[100vh]">
+      <div class="lg:w-[calc(100vw-100vh)] lg:h-[100vh] overflow-y-auto bg-[gray]">
         <PlaymatesList />
       </div>
-      <div class="w-[100vh]">
+      <div class="lg:w-[100vh]">
         <Switch fallback={<Field players={[]} />}>
           <Match when={!isInGame()}>
             <div class="flex justify-center items-center h-full">

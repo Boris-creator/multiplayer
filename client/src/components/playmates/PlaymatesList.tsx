@@ -5,6 +5,7 @@ import type { JoinDisconnectPayload, EventData } from "@/types";
 import type { Component } from "solid-js";
 
 const PlaymatesList: Component = () => {
+  const self = state.user;
   const wsConn = useWS();
   wsConn?.addEventListener("message", (e) => {
     console.log(e);
@@ -19,20 +20,20 @@ const PlaymatesList: Component = () => {
       setState("playmates", () => payload.users);
       if (newUser?.userId === self?.userId) {
         setState("clientId", () => newUser?.clientId as string);
+      } else {
+        wsConn.send(
+          JSON.stringify({
+            eventName: "message",
+            eventPayload: {
+              userID: payload.clientId,
+              message: "hiiii",
+            },
+          })
+        );
       }
-
-      wsConn.send(
-        JSON.stringify({
-          eventName: "message",
-          eventPayload: {
-            userID: payload.clientId,
-            message: "hiiii",
-          },
-        })
-      );
     }
   });
-  const self = state.user;
+
   return (
     <div>
       <For each={state.playmates}>
