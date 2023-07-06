@@ -12,14 +12,13 @@ import (
 
 type User struct {
 	gorm.Model
-	Username string `gorm:"size:255;not null;unique" json:"username"`
-	Password string `gorm:"size:255;not null;" json:"password"`
+	Username string   `gorm:"size:255;not null;unique" json:"username"`
+	Password string   `gorm:"size:255;not null;" json:"password"`
+	Weapons  []Weapon `gorm:"many2many:user_arsenal;"`
 }
 
 func (u *User) SaveUser() (*User, error) {
-
-	var err error
-	err = DB.Create(&u).Error
+	err := DB.Create(&u).Error
 	if err != nil {
 		return &User{}, err
 	}

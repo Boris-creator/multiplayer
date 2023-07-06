@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"path"
 	"shooter/controllers"
 	"shooter/models"
+	seeding "shooter/seeders"
 	"shooter/socket"
 
 	"github.com/gin-contrib/cors"
@@ -16,6 +18,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -25,6 +28,7 @@ func main() {
 	dir, _ := os.Getwd()
 	port := os.Getenv("APP_PORT")
 	models.ConnectDataBase()
+	seeding.Seed()
 	r := gin.Default()
 	r.LoadHTMLGlob(path.Join(dir, "./templates/*.*"))
 
@@ -40,7 +44,7 @@ func main() {
 	if redisClient == nil {
 		log.Fatalf("Error connecting Redis")
 	}
-
+	redisClient.FlushAll(ctx)
 	hub := socket.NewHub(*redisClient)
 	go hub.Run()
 

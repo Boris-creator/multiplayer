@@ -38,5 +38,5 @@ func ConnectDataBase() {
 	}
 
 	DB.AutoMigrate(&User{})
-
+	DB.AutoMigrate(&Weapon{})
 }
