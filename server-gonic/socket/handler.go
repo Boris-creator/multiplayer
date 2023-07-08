@@ -31,7 +31,7 @@ func CreateNewSocketUser(hub *Hub, connection *websocket.Conn, userId int, userN
 		send:                make(chan SocketEventStruct),
 		userID:              userId,
 		userName:            userName,
-		clientID:            uniqueID.String(),
+		clientId:            uniqueID.String(),
 	}
 
 	go client.writePump()
@@ -81,9 +81,9 @@ func BroadcastSocketEventToClients(hub *Hub, payload SocketEventStruct, clients 
 }
 
 // EmitToSpecificClient will emit the socket event to specific socket user
-func EmitToSpecificClient(hub *Hub, payload SocketEventStruct, clientID string) {
+func EmitToSpecificClient(hub *Hub, payload SocketEventStruct, clientId string) {
 	for client := range hub.clients {
-		if client.clientID == clientID {
+		if client.clientId == clientId {
 			BroadcastSocketEventToClients(hub, payload, []*Client{client})
 			break
 		}
@@ -95,21 +95,21 @@ func BroadcastSocketEventToAllClient(hub *Hub, payload SocketEventStruct) {
 	BroadcastSocketEventToClients(hub, payload, maps.Keys(hub.clients))
 }
 
-func BroadcastSocketEventToAllExceptOne(hub *Hub, payload SocketEventStruct, clientID string) {
+func BroadcastSocketEventToAllExceptOne(hub *Hub, payload SocketEventStruct, clientId string) {
 	clients := []*Client{}
 	for client := range hub.clients {
-		if client.clientID != clientID {
+		if client.clientId != clientId {
 			clients = append(clients, client)
 		}
 	}
 	BroadcastSocketEventToClients(hub, payload, clients)
 }
 
-func getUserByClientID(hub *Hub, clientID string) UserStruct {
+func getUserByClientID(hub *Hub, clientId string) UserStruct {
 	var user UserStruct
-	user.ClientID = clientID
+	user.ClientID = clientId
 	for client := range hub.clients {
-		if client.clientID == clientID {
+		if client.clientId == clientId {
 			user.UserID = client.userID
 			user.UserName = client.userName
 		}
@@ -122,7 +122,7 @@ func getAllConnectedUsers(hub *Hub) []UserStruct {
 	for singleClient := range hub.clients {
 		users = append(users, UserStruct{
 			UserID:   singleClient.userID,
-			ClientID: singleClient.clientID,
+			ClientID: singleClient.clientId,
 			UserName: singleClient.userName,
 		})
 	}

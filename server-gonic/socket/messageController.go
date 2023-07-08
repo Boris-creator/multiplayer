@@ -26,7 +26,7 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		var eventPayload map[string]interface{}
 
 		joinDisconnectPayload := JoinDisconnectPayload{
-			UserID: client.clientID,
+			UserID: client.clientId,
 			Users:  getAllConnectedUsers(client.hub),
 		}
 		marshalled, _ := json.Marshal(joinDisconnectPayload)
@@ -42,7 +42,7 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 
 		var eventPayload map[string]interface{}
 		disconnectPayload := JoinDisconnectPayload{
-			UserID: client.clientID,
+			UserID: client.clientId,
 			Users:  getAllConnectedUsers(client.hub),
 		}
 		marshalled, _ := json.Marshal(disconnectPayload)
@@ -62,11 +62,11 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		if err != redis.Nil {
 			hubGame.UnmarshalBinary([]byte(savedGameState))
 		}
-		if slices.Contains(maps.Keys(hubGame.Locations), client.clientID) {
+		if slices.Contains(maps.Keys(hubGame.Locations), client.clientId) {
 			return
 		}
 
-		hubGame.Locations[client.clientID], _ = hubGame.RandomLocation()
+		hubGame.Locations[client.clientId], _ = hubGame.RandomLocation()
 
 		saved, _ := hubGame.MarshalBinary()
 		saveError := hub.db.Set(ctx, redisGameKey, saved, 0)
@@ -80,11 +80,11 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 			Joining: []UserGameLocation{
 				{
 					User: UserStruct{
-						ClientID: client.clientID,
+						ClientID: client.clientId,
 						UserID:   client.userID,
 						UserName: client.userName,
 					},
-					Position: hubGame.Locations[client.clientID],
+					Position: hubGame.Locations[client.clientId],
 				},
 			},
 			Disconnecting: []UserStruct{},
@@ -106,14 +106,14 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 			EventName:    socketEventPayload.EventName,
 			EventPayload: eventPayload,
 		},
-			client.clientID)
+			client.clientId)
 		marshalledForGuest, _ := json.Marshal(joinGameGuestPayload)
 		eventPayload = map[string]interface{}{}
 		json.Unmarshal(marshalledForGuest, &eventPayload)
 		EmitToSpecificClient(client.hub, SocketEventStruct{
 			EventName:    "gameState",
 			EventPayload: eventPayload,
-		}, client.clientID)
+		}, client.clientId)
 
 	case "message":
 
@@ -123,7 +123,7 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		socketEventResponse.EventPayload = map[string]interface{}{
 			"userID":   getUserByClientID(client.hub, selectedUserID).UserID,
 			"message":  socketEventPayload.EventPayload["message"],
-			"clientID": selectedUserID,
+			"clientId": selectedUserID,
 			"fromID":   client.userID,
 		}
 		EmitToSpecificClient(client.hub, socketEventResponse, selectedUserID)
@@ -138,12 +138,12 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		}
 		stepX := int(socketEventPayload.EventPayload["x"].(float64))
 		stepY := int(socketEventPayload.EventPayload["y"].(float64))
-		_, isInGame := hubGame.Locations[client.clientID]
+		_, isInGame := hubGame.Locations[client.clientId]
 		if !isInGame {
 			return
 		}
 
-		updatedPosition := hubGame.MovePlayer(client.clientID, game.Position{X: stepX, Y: stepY})
+		updatedPosition := hubGame.MovePlayer(client.clientId, game.Position{X: stepX, Y: stepY})
 
 		saved, _ := hubGame.MarshalBinary()
 		saveError := client.hub.db.Set(ctx, redisGameKey, saved, 0)
@@ -155,7 +155,7 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 		socketEventResponse.EventPayload = map[string]interface{}{
 			"x":        updatedPosition.X,
 			"y":        updatedPosition.Y,
-			"clientID": client.clientID,
+			"clientId": client.clientId,
 			"userName": client.userName,
 		}
 		BroadcastSocketEventToAllClient(client.hub, SocketEventStruct{

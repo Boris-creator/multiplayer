@@ -39,7 +39,7 @@ type Client struct {
 	hub                 *Hub
 	webSocketConnection *websocket.Conn
 	send                chan SocketEventStruct
-	clientID            string
+	clientId            string
 	userID              int
 	userName            string
 }
