@@ -45,7 +45,7 @@ export type JoinGamePayload = {
   }>;
 };
 export type MoveEventPayload = {
-  clientID: number;
+  clientId: string;
   userName: string;
   x: Position["x"];
   y: Position["y"];

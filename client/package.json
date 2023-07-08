@@ -30,6 +30,7 @@
     "vite-plugin-solid": "^2.5.0"
   },
   "dependencies": {
+    "@babylonjs/core": "^6.11.1",
     "@solidjs/router": "^0.8.2",
     "solid-forms": "^0.4.8",
     "solid-js": "^1.6.10"

@@ -4,6 +4,7 @@ import {
   createSignal,
   For,
   createEffect,
+  onMount,
 } from "solid-js";
 import { gameState, setGameState } from "@/store/game";
 import { state } from "@/store";
@@ -18,6 +19,10 @@ import type {
   Step,
 } from "@/types";
 import { EventName } from "@/types";
+import { RenderService, type Mesh } from "@/services/renderService";
+
+const fieldWidth = 10;
+const fieldHeight = 10;
 
 const [gameField] = createSignal({
   x: 0,
@@ -31,20 +36,26 @@ const cellSide = 10;
 const Field: Component<{ players: Array<Position> }> = () => {
   const selfClientId = createMemo(() => state.clientId);
   const wsConn = useWS();
+  let scene: RenderService;
   wsConn?.init();
   wsConn?.addEventListener("message", (e) => {
     const data = JSON.parse((e as MessageEvent).data) as EventData;
 
     if (data.eventName === EventName.move) {
-      const { clientID, userName, x, y } =
+      const { clientId, userName, x, y } =
         data.eventPayload as MoveEventPayload;
       setGameState("locations", locations => ({
         ...locations,
-        [clientID]: {
-          user: { userName } as Playmate,
+        [clientId]: {
+          user: { userName, clientId } as Playmate,
           position: { x, y },
         },
       }));
+
+      scene.moveMesh2D(scene.getMeshByName(`${clientId}`) as Mesh, {
+        x,
+        y,
+      });
     }
 
     if (data.eventName === EventName.gameState) {
@@ -73,6 +84,10 @@ const Field: Component<{ players: Array<Position> }> = () => {
           ])
         ),
       }));
+
+      disconnecting.forEach(({ user }) => {
+        RenderService.removeMesh(scene.getMeshByName(user.clientId) as Mesh);
+      });
     }
   });
 
@@ -109,9 +124,29 @@ const Field: Component<{ players: Array<Position> }> = () => {
     }
   });
 
+  createEffect(() => {
+    Object.values(gameState.locations).forEach(({ user, position }) => {
+      if (!scene.getMeshByName(user.clientId)) {
+        const mesh = RenderService.addMesh(user.clientId);
+        scene.moveMesh2D(mesh, position);
+      }
+    });
+  });
+
+  let canvas!: HTMLCanvasElement;
+  onMount(() => {
+    scene = new RenderService(canvas, {
+      width: fieldWidth,
+      height: fieldHeight,
+    });
+  });
+
   return (
     <div>
-      <div class="flex justify-center">
+      <div class="flex justify-center relative">
+        <div class="absolute top-0 left-0">
+          <canvas ref={canvas} width={300} height={300} class="bg-[gray]" />
+        </div>
         <svg
           class="border border-[silver] w-full"
           xmlns="http://www.w3.org/2000/svg"

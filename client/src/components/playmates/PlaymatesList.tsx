@@ -8,7 +8,6 @@ const PlaymatesList: Component = () => {
   const self = state.user;
   const wsConn = useWS();
   wsConn?.addEventListener("message", (e) => {
-    console.log(e);
     const data = JSON.parse((e as MessageEvent).data) as EventData;
 
     if (data.eventName === "join") {
