@@ -8,18 +8,18 @@ import (
 	"shooter/game"
 
 	"github.com/go-redis/redis/v8"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStruct) {
 	ctx := context.Background()
 	redisGameKey := "game"
+	hub := client.hub
 
 	var socketEventResponse SocketEventStruct
 	if !validateEvent(socketEventPayload) {
 		return
 	}
+
 	switch socketEventPayload.EventName {
 	case "join":
 		log.Printf("Join Event triggered")
@@ -40,6 +40,10 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 	case "disconnect":
 		log.Printf("Disconnect Event triggered")
 
+		updateDBGameState(hub, func(gameState game.GameState) {
+			gameState.RemovePlayer(client.clientID)
+		})
+
 		var eventPayload map[string]interface{}
 		disconnectPayload := JoinDisconnectPayload{
 			UserID: client.clientID,
@@ -56,23 +60,9 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 	case "joinGame":
 		log.Printf("Game Join Event triggered")
 
-		hub := client.hub
-		hubGame := game.NewGame()
-		savedGameState, err := hub.db.Get(ctx, redisGameKey).Result()
-		if err != redis.Nil {
-			hubGame.UnmarshalBinary([]byte(savedGameState))
-		}
-		if slices.Contains(maps.Keys(hubGame.Locations), client.clientID) {
-			return
-		}
-
-		hubGame.Locations[client.clientID], _ = hubGame.RandomLocation()
-
-		saved, _ := hubGame.MarshalBinary()
-		saveError := hub.db.Set(ctx, redisGameKey, saved, 0)
-		if saveError.Err() != nil {
-			fmt.Println(saveError)
-		}
+		hubGame, _ := updateDBGameState(hub, func(gameState game.GameState) {
+			gameState.AddPlayer(client.clientID)
+		})
 
 		var eventPayload map[string]interface{}
 
@@ -163,4 +153,24 @@ func handleSocketPayloadEvents(client *Client, socketEventPayload SocketEventStr
 			EventPayload: socketEventResponse.EventPayload,
 		})
 	}
+}
+
+func updateDBGameState(hub *Hub, cb func(gameState game.GameState)) (game.GameState, error) {
+	ctx := context.Background()
+	redisGameKey := "game"
+	hubGame := game.NewGame()
+	savedGameState, err := hub.db.Get(ctx, redisGameKey).Result()
+	if err != redis.Nil {
+		hubGame.UnmarshalBinary([]byte(savedGameState))
+	}
+
+	cb(*hubGame)
+
+	saved, _ := hubGame.MarshalBinary()
+	saveError := hub.db.Set(ctx, redisGameKey, saved, 0)
+	if saveError.Err() != nil {
+		fmt.Println(saveError)
+		return *hubGame, err
+	}
+	return *hubGame, nil
 }

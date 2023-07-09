@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
@@ -19,6 +20,18 @@ type GameState struct {
 
 const fieldWidth = 9
 const fieldHeight = 9
+
+func (state *GameState) AddPlayer(playerId string) {
+	if slices.Contains(maps.Keys(state.Locations), playerId) {
+		return
+	}
+
+	state.Locations[playerId], _ = state.randomLocation()
+}
+
+func (state *GameState) RemovePlayer(playerId string) {
+	delete(state.Locations, playerId)
+}
 
 func (state *GameState) MovePlayer(player string, step Position) *Position {
 	location := state.Locations[player]
@@ -43,7 +56,7 @@ func (state *GameState) MovePlayer(player string, step Position) *Position {
 	return location
 }
 
-func (state *GameState) RandomLocation() (*Position, error) {
+func (state *GameState) randomLocation() (*Position, error) {
 	occupied := []int{}
 	open := []int{}
 	for _, position := range state.Locations {
