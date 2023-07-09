@@ -15,13 +15,15 @@ const meshCellSide = 0.1;
 export class RenderService {
   private scene: Scene;
   private engine: Engine;
+  private camera: ArcRotateCamera;
+
   constructor(
     private canvas: HTMLCanvasElement,
     private fieldSize: { width: number; height: number }
   ) {
     this.engine = new Engine(this.canvas, true);
     this.scene = this.createScene();
-    const camera = new ArcRotateCamera(
+    this.camera = new ArcRotateCamera(
       "camera",
       -Math.PI / 2,
       Math.PI / 2.5,
@@ -72,6 +74,12 @@ export class RenderService {
       meshCellSide / 2,
       fieldCoordinates.y
     );
+  }
+
+  attachCameraTo(mesh: Mesh) {
+    if (this.camera.parent !== mesh) {
+      this.camera.parent = mesh;
+    }
   }
 }
 

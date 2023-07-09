@@ -129,6 +129,10 @@ const Field: Component<{ players: Array<Position> }> = () => {
       if (!scene.getMeshByName(user.clientId)) {
         const mesh = RenderService.addMesh(user.clientId);
         scene.moveMesh2D(mesh, position);
+
+        if (user.clientId === selfClientId()) {
+          scene.attachCameraTo(mesh);
+        }
       }
     });
   });
@@ -144,43 +148,48 @@ const Field: Component<{ players: Array<Position> }> = () => {
   return (
     <div>
       <div class="flex justify-center relative">
-        <div class="absolute top-0 left-0">
-          <canvas ref={canvas} width={300} height={300} class="bg-[gray]" />
+        <div class="absolute top-0 right-0">
+          <svg
+            class="border border-[silver] w-full"
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 100 100"
+          >
+            <rect
+              x={gameField().x}
+              y={gameField().y}
+              width={gameField().width}
+              height={gameField().height}
+              fill="rgba(255, 255, 255, .5)"
+            />
+            <g>
+              <For each={Object.entries(gameState.locations)}>
+                {([
+                  clientId,
+                  {
+                    position: { x, y },
+                  },
+                ]) => (
+                  <rect
+                    x={x * cellSide}
+                    y={y * cellSide}
+                    width={cellSide}
+                    height={cellSide}
+                    fill={clientId === selfClientId() ? "red" : "black"}
+                  />
+                )}
+              </For>
+            </g>
+          </svg>
         </div>
-        <svg
-          class="border border-[silver] w-full"
-          xmlns="http://www.w3.org/2000/svg"
-          preserveAspectRatio="xMidYMid meet"
-          viewBox="0 0 100 100"
-        >
-          <rect
-            x={gameField().x}
-            y={gameField().y}
-            width={gameField().width}
-            height={gameField().height}
-            fill="white"
-            tabIndex="-1"
-            onKeyUp={handleMove}
-          />
-          <g>
-            <For each={Object.entries(gameState.locations)}>
-              {([
-                clientId,
-                {
-                  position: { x, y },
-                },
-              ]) => (
-                <rect
-                  x={x * cellSide}
-                  y={y * cellSide}
-                  width={cellSide}
-                  height={cellSide}
-                  fill={clientId === selfClientId() ? "red" : "black"}
-                />
-              )}
-            </For>
-          </g>
-        </svg>
+        <canvas
+          ref={canvas}
+          width={300}
+          height={300}
+          class="bg-[lightgray] w-full"
+          tabIndex="-1"
+          onKeyUp={handleMove}
+        />
       </div>
     </div>
   );
