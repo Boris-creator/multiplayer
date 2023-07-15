@@ -1,7 +1,7 @@
 import {
   Scene,
   Engine,
-  ArcRotateCamera,
+  UniversalCamera,
   HemisphericLight,
   Vector3,
   MeshBuilder,
@@ -9,13 +9,17 @@ import {
   type Mesh,
   StandardMaterial,
 } from "@babylonjs/core";
+import { type Rotation } from "@/helpers/geometryHelper";
 
 const meshCellSide = 0.1;
 
 export class RenderService {
   private scene: Scene;
   private engine: Engine;
-  private camera: ArcRotateCamera;
+  private camera: UniversalCamera;
+  private cameraAttached = false;
+
+  private PERSON_HEIGHT = 3;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -23,12 +27,9 @@ export class RenderService {
   ) {
     this.engine = new Engine(this.canvas, true);
     this.scene = this.createScene();
-    this.camera = new ArcRotateCamera(
+    this.camera = new UniversalCamera(
       "camera",
-      -Math.PI / 2,
-      Math.PI / 2.5,
-      3,
-      new Vector3(0, 0, 0),
+      new Vector3(0, 0.2, -5),
       this.scene
     );
     new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
@@ -49,10 +50,10 @@ export class RenderService {
   createScene() {
     return new Scene(this.engine);
   }
-  static addMesh(meshName: string) {
+  addMesh(meshName: string) {
     return MeshBuilder.CreateBox(meshName, {
       width: meshCellSide,
-      height: meshCellSide,
+      height: meshCellSide * this.PERSON_HEIGHT,
       depth: meshCellSide,
     });
   }
@@ -71,15 +72,25 @@ export class RenderService {
     };
     mesh.position = new Vector3(
       fieldCoordinates.x,
-      meshCellSide / 2,
+      (meshCellSide * this.PERSON_HEIGHT) / 2,
       fieldCoordinates.y
     );
   }
 
   attachCameraTo(mesh: Mesh) {
-    if (this.camera.parent !== mesh) {
-      this.camera.parent = mesh;
+    if (this.cameraAttached) {
+      return;
     }
+    this.scene.registerBeforeRender(() => {
+      this.camera.position.x = mesh.position.x;
+      this.camera.position.y = mesh.position.y + 0.3;
+      this.camera.position.z = mesh.position.z - 2;
+    });
+    this.cameraAttached = true;
+  }
+
+  rotateCamera(angle: Rotation) {
+    this.camera.rotation.y = (angle * Math.PI) / 180;
   }
 }
 

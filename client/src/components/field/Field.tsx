@@ -18,6 +18,11 @@ import type {
   Position,
   Step,
 } from "@/types";
+import {
+  type Rotation,
+  rotateClockwise,
+  applyRotation,
+} from "@/helpers/geometryHelper";
 import { EventName } from "@/types";
 import { RenderService, type Mesh } from "@/services/renderService";
 
@@ -37,6 +42,9 @@ const Field: Component<{ players: Array<Position> }> = () => {
   const selfClientId = createMemo(() => state.clientId);
   const wsConn = useWS();
   let scene: RenderService;
+
+  const [rotation, rotate] = createSignal<Rotation>(0);
+
   wsConn?.init();
   wsConn?.addEventListener("message", (e) => {
     const data = JSON.parse((e as MessageEvent).data) as EventData;
@@ -100,19 +108,29 @@ const Field: Component<{ players: Array<Position> }> = () => {
     );
   };
   const handleMove = (ev: KeyboardEvent) => {
+    if (ev.code === "KeyE") {
+      rotate(rotateClockwise);
+      scene.rotateCamera(rotation());
+      return;
+    }
     const keyCodes: Record<KeyboardEvent["code"], Step> = {
       ArrowUp: { x: 0, y: -1 },
       ArrowDown: { x: 0, y: 1 },
       ArrowRight: { x: 1, y: 0 },
       ArrowLeft: { x: -1, y: 0 },
     };
+
+    if (!(ev.code in keyCodes)) {
+      return;
+    }
     const step = keyCodes[ev.code];
+    const rotatedStep = applyRotation(rotation(), step);
     wsConn?.send(
       JSON.stringify({
         eventName: "move",
         eventPayload: {
-          x: step.x,
-          y: step.y,
+          x: rotatedStep.x,
+          y: rotatedStep.y,
         },
       })
     );
@@ -127,7 +145,7 @@ const Field: Component<{ players: Array<Position> }> = () => {
   createEffect(() => {
     Object.values(gameState.locations).forEach(({ user, position }) => {
       if (!scene.getMeshByName(user.clientId)) {
-        const mesh = RenderService.addMesh(user.clientId);
+        const mesh = scene.addMesh(user.clientId);
         scene.moveMesh2D(mesh, position);
 
         if (user.clientId === selfClientId()) {
