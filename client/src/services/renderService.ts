@@ -14,8 +14,8 @@ import { type Rotation } from "@/helpers/geometryHelper";
 const meshCellSide = 0.1;
 
 export class RenderService {
-  private scene: Scene;
-  private engine: Engine;
+  private readonly scene: Scene;
+  private readonly engine: Engine;
   private camera: UniversalCamera;
   private cameraAttached = false;
 
@@ -82,9 +82,11 @@ export class RenderService {
       return;
     }
     this.scene.registerBeforeRender(() => {
-      this.camera.position.x = mesh.position.x;
+      this.camera.position.x =
+        mesh.position.x - Math.sin(this.camera.rotation.y) * 1.5;
       this.camera.position.y = mesh.position.y + 0.3;
-      this.camera.position.z = mesh.position.z - 2;
+      this.camera.position.z =
+        mesh.position.z - Math.cos(this.camera.rotation.y) * 1.5;
     });
     this.cameraAttached = true;
   }

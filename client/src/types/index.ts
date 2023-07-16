@@ -1,3 +1,5 @@
+import type { Rotation } from "@/helpers/geometryHelper";
+
 export type Nullable<T> = T | null;
 export type Playmate = {
   clientId: string;
@@ -8,6 +10,11 @@ export type Playmate = {
 export type Position = {
   x: number;
   y: number;
+  rotation?: {
+    x: Rotation;
+    y: Rotation;
+    z: Rotation;
+  };
 };
 export type Step = {
   x: -1 | 0 | 1;

@@ -25,6 +25,7 @@ import {
 } from "@/helpers/geometryHelper";
 import { EventName } from "@/types";
 import { RenderService, type Mesh } from "@/services/renderService";
+import { useKeyboard } from "@/composables/useKeypress";
 
 const fieldWidth = 10;
 const fieldHeight = 10;
@@ -161,6 +162,7 @@ const Field: Component<{ players: Array<Position> }> = () => {
       width: fieldWidth,
       height: fieldHeight,
     });
+    useKeyboard(handleMove, canvas);
   });
 
   return (
@@ -194,6 +196,13 @@ const Field: Component<{ players: Array<Position> }> = () => {
                     width={cellSide}
                     height={cellSide}
                     fill={clientId === selfClientId() ? "red" : "black"}
+                    transform={
+                      clientId === selfClientId()
+                        ? `rotate(${rotation()} ${
+                            x * cellSide + cellSide / 2
+                          } ${y * cellSide + cellSide / 2})`
+                        : ""
+                    }
                   />
                 )}
               </For>
@@ -206,7 +215,6 @@ const Field: Component<{ players: Array<Position> }> = () => {
           height={300}
           class="bg-[lightgray] w-full"
           tabIndex="-1"
-          onKeyUp={handleMove}
         />
       </div>
     </div>
