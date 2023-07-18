@@ -15,4 +15,8 @@ export default [
     path: ROUTER_PATHS.game.prefix,
     component: lazy(() => import("@/components/Game")),
   },
+  {
+    path: ROUTER_PATHS.users.prefix,
+    component: lazy(() => import("@/components/users/UsersList")),
+  },
 ] as Array<RouteDefinition>;

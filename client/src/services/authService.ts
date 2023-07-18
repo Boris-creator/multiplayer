@@ -12,7 +12,7 @@ const parseJwt = (token: string): Record<string, any> | null => {
 export class AuthService {
   static async logIn(credentials: { login: string; password: string }) {
     const { login, password } = credentials;
-    const response = await HttpService.post("api/login", {
+    const response = await HttpService.post("login", {
       username: login,
       password: password,
     });

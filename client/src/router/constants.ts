@@ -7,4 +7,7 @@ export const ROUTER_PATHS = {
   game: {
     prefix: "/game",
   },
+  users: {
+    prefix: "/users",
+  },
 } as const;

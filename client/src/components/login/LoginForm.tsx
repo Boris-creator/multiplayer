@@ -65,7 +65,7 @@ const LoginForm: Component = () => {
           "border-[red]": loginControl.isTouched && !loginControl.isValid,
         }}
       />
-      <Show when={loginControl.isTouched && !loginControl.isValid} />
+      {/*<Show when={loginControl.isTouched && !loginControl.isValid} />*/}
       <input
         ref={passwordInput}
         type="password"
@@ -77,7 +77,7 @@ const LoginForm: Component = () => {
           "border-[red]": passwordControl.isTouched && !passwordControl.isValid,
         }}
       />
-      <Show when={passwordControl.isTouched && !passwordControl.isValid} />
+      {/*<Show when={passwordControl.isTouched && !passwordControl.isValid} />*/}
       <button class="bg-white">log in</button>
     </form>
   );
