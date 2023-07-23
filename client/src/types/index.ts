@@ -6,7 +6,11 @@ export type Playmate = {
   userId: number;
   userName: string;
 };
-
+export type Vector = {
+  x: number;
+  y: number;
+  z: number;
+};
 export type Position = {
   x: number;
   y: number;

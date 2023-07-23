@@ -6,6 +6,7 @@ import {
   createEffect,
   onMount,
 } from "solid-js";
+import Building from "@/components/field/Building";
 import { gameState, setGameState } from "@/store/game";
 import { state } from "@/store";
 import { useWS } from "@/components/WSProvider";
@@ -26,6 +27,8 @@ import {
 import { EventName } from "@/types";
 import { RenderService, type Mesh } from "@/services/renderService";
 import { useKeyboard } from "@/composables/useKeypress";
+import type { Building as TBuilding } from "@/types/buildings";
+import buildings from "@/assets/buildings.json";
 
 const fieldWidth = 10;
 const fieldHeight = 10;
@@ -39,7 +42,12 @@ const [gameField] = createSignal({
 
 const cellSide = 10;
 
-const Field: Component<{ players: Array<Position> }> = () => {
+const defaultBuildings: TBuilding[] = buildings;
+
+const Field: Component<{
+  players: Array<Position>;
+  textures: { buildings: TBuilding[] };
+}> = (props) => {
   const selfClientId = createMemo(() => state.clientId);
   const wsConn = useWS();
   let scene: RenderService;
@@ -162,6 +170,11 @@ const Field: Component<{ players: Array<Position> }> = () => {
       width: fieldWidth,
       height: fieldHeight,
     });
+
+    defaultBuildings.forEach(building => {
+      scene.addBuilding(building);
+    });
+
     useKeyboard(handleMove, canvas);
   });
 
@@ -182,6 +195,9 @@ const Field: Component<{ players: Array<Position> }> = () => {
               height={gameField().height}
               fill="rgba(255, 255, 255, .5)"
             />
+            <For each={[...props.textures.buildings, ...defaultBuildings]}>
+              {building => <Building building={building} scale={cellSide} />}
+            </For>
             <g>
               <For each={Object.entries(gameState.locations)}>
                 {([

@@ -1,4 +1,4 @@
-import type { Step } from "@/types";
+import type { Step, Vector } from "@/types";
 
 export type Rotation = 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315;
 const ROTATIONS = new Map<Rotation, number[][]>([
@@ -70,4 +70,14 @@ export function applyRotation(rotation: Rotation, step: Step) {
     x: step.x * matrix[0][0] + step.y * matrix[1][0],
     y: step.x * matrix[0][1] + step.y * matrix[1][1],
   } as Step;
+}
+
+//TODO write scaling function
+
+export function castTo3DCoordinates(coordinates2D: Vector): Vector {
+  return {
+    x: coordinates2D.x,
+    y: coordinates2D.z,
+    z: coordinates2D.y,
+  };
 }

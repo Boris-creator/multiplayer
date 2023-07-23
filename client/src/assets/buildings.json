@@ -1,0 +1,30 @@
+[
+  {
+    "walls": [
+      {
+        "corner": { "x": 2.5, "y": 7.5, "z": 0 },
+        "width": 1,
+        "height": 1,
+        "thick": 0.05
+      },
+      {
+        "corner": { "x": 7.5, "y": 7.5, "z": 0 },
+        "width": 1,
+        "height": 1,
+        "thick": 0.05
+      },
+      {
+        "corner": { "x": 7.5, "y": 2.5, "z": 0 },
+        "width": 1,
+        "height": 1,
+        "thick": 0.05
+      },
+      {
+        "corner": { "x": 2.5, "y": 2.5, "z": 0 },
+        "width": 1,
+        "height": 1,
+        "thick": 0.05
+      }
+    ]
+  }
+]
