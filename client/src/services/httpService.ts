@@ -1,13 +1,14 @@
-import { BASE_URL } from "@/constants";
+import { BASE_API_URL } from "@/constants";
 
 export class HttpService {
   private static async fetch<T>(url: string, options?: RequestInit) {
-    const response = await fetch(BASE_URL + url, options);
+    const response = await fetch(BASE_API_URL + url, options);
     if (!response.ok) {
       //throw new Error();
     }
     return {
-      ...response,
+      headers: response.headers,
+      ok: response.ok,
       data: (await response.json()) as T,
     };
   }
