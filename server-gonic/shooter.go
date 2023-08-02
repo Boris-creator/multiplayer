@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"shooter/controllers"
@@ -34,6 +35,7 @@ func main() {
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:3001"}
+	corsConfig.AllowMethods = []string{http.MethodGet, http.MethodPatch, http.MethodPost, http.MethodHead, http.MethodDelete, http.MethodOptions}
 	r.Use(cors.New(corsConfig))
 
 	redisClient := redis.NewClient(&redis.Options{
@@ -60,6 +62,10 @@ func main() {
 
 	public.POST("/register", controllers.Register)
 	public.POST("/login", controllers.Login)
+
+	userRouter := public.Group("/users")
+	userRouter.GET("", controllers.GetUsersList)
+	userRouter.GET("/:id", controllers.GetUser)
 
 	r.Run(fmt.Sprintf("localhost:%s", port))
 }
