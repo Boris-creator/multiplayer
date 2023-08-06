@@ -22,5 +22,6 @@ type Wall struct {
 }
 
 type Building struct {
-	Walls []Wall
+	Walls      []Wall
+	InnerWalls [][]Vector
 }

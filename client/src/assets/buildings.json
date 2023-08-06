@@ -42,6 +42,7 @@
         "thick": 0.05,
         "windows": []
       }
-    ]
+    ],
+    "innerWalls": []
   }
 ]

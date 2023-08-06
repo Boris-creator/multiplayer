@@ -20,7 +20,7 @@
     "max-len": "off",
     "linebreak-style": "off",
     "camelcase": ["off", { "properties": "never", "ignoreDestructuring": true, "ignoreImports": true }],
-    "arrow-parens": ["warn", "as-needed"],
+    "arrow-parens": ["off", "as-needed"],
     "vue/multiline-html-element-content-newline": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "import/prefer-default-export": "off",

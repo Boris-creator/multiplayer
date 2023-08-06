@@ -34,6 +34,7 @@
     "@babylonjs/core": "^6.11.1",
     "@solidjs/router": "^0.8.2",
     "earcut": "^2.2.4",
+    "mathjs": "^11.9.1",
     "solid-forms": "^0.4.8",
     "solid-js": "^1.6.10"
   },

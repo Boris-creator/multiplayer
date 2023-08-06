@@ -14,13 +14,24 @@ import {
   StandardMaterial,
 } from "@babylonjs/core";
 import earcut from "earcut";
-import { castTo3DCoordinates, type Rotation } from "@/helpers/geometryHelper";
+import {
+  castTo3DCoordinates,
+  getPerpendicular,
+  type Rotation,
+} from "@/helpers/geometryHelper";
 import { Building } from "@/types/buildings";
 import type { Vector } from "@/types";
+import math from "mathjs";
+import { Render } from "@/interfaces/RenderService";
+
+type VertexFullData = VertexData & {
+  positions: Extract<VertexData["positions"], number[]>;
+  indices: Extract<VertexData["indices"], number[]>;
+};
 
 const meshCellSide = 0.1;
 
-export class RenderService {
+export class RenderService implements Render {
   private readonly scene: Scene;
   private readonly engine: Engine;
   private camera: UniversalCamera;
@@ -54,7 +65,7 @@ export class RenderService {
       this.scene.render();
     });
   }
-  createScene() {
+  private createScene() {
     return new Scene(this.engine);
   }
   addMesh(meshName: string) {
@@ -100,12 +111,12 @@ export class RenderService {
   }
 
   addBuilding(building: Building) {
-    const walls = building.walls.map(wall => {
+    const walls = building.walls.map((wall) => {
       const { x, y, z } = castTo3DCoordinates(this.getCoordinates(wall.corner));
       return {
         ...wall,
         corner: new Vector3(x, y, z),
-        windows: wall.windows.map(wallWindow => ({
+        windows: wall.windows.map((wallWindow) => ({
           left: wallWindow.left / this.fieldSize.width,
           width: wallWindow.width / this.fieldSize.width,
           base: wallWindow.base / this.fieldSize.width,
@@ -113,6 +124,10 @@ export class RenderService {
         })),
       };
     });
+
+    const innerWalls = building.innerWalls.map((wall) =>
+      wall.map((corner) => castTo3DCoordinates(this.getCoordinates(corner)))
+    );
 
     const { thick: wallThickness, height } = walls[0];
     const wallsCount = walls.length;
@@ -200,7 +215,7 @@ export class RenderService {
             windowPlan.base + windowPlan.height,
           ],
           [windowPlan.left, windowPlan.base + windowPlan.height],
-        ].map(v => new Vector3(v[0], v[1], 0));
+        ].map((v) => new Vector3(v[0], v[1], 0));
 
         const windowHole = MeshBuilder.ExtrudeShape(
           "windowHole",
@@ -219,25 +234,60 @@ export class RenderService {
       }
     });
 
+    // inner walls
+    const innerWallsData = new VertexData() as VertexFullData;
+    innerWallsData.positions = [];
+    innerWallsData.indices = [];
+    innerWalls.forEach((wall) => {
+      const wallMiddleLine = [
+        [wall[0].x, 0, wall[0].y],
+        [wall[1].x, 0, wall[1].y],
+        [wall[1].x, height, wall[1].y],
+        [wall[0].x, height, wall[0].y],
+      ].map((w) => new Vector3(...w));
+
+      const wallMiddleBaseLine = wallMiddleLine.slice(0, 2);
+      const wallMiddleTopLine = wallMiddleLine.slice(2);
+      const baseMiddle = wallMiddleBaseLine[1].subtract(wallMiddleBaseLine[0]);
+      const topMiddle = wallMiddleTopLine[0].subtract(wallMiddleTopLine[1]);
+
+      const baseThick = getPerpendicular(baseMiddle)
+        .normalize()
+        .scale(wallThickness / 2);
+      const topThick = getPerpendicular(topMiddle)
+        .normalize()
+        .scale(wallThickness / 2);
+
+      const frontFace = [
+        ...wallMiddleBaseLine.map((corner) => corner.add(baseThick)),
+        ...wallMiddleTopLine.map((corner) => corner.add(topThick)),
+      ];
+      const backFace = [
+        ...wallMiddleBaseLine.map((corner) => corner.subtract(baseThick)),
+        ...wallMiddleTopLine.map((corner) => corner.subtract(topThick)),
+      ];
+      const wallData = this.renderBox([
+        //...test1.map(v => {const arr = []; v.toArray(arr); return arr}),
+        //...test.map(v => {const arr = []; v.toArray(arr); return arr})
+        ...backFace.map((v) => [v.x, v.y, v.z]),
+        ...frontFace.map((v) => [v.x, v.y, v.z]),
+      ]);
+      const indices = wallData.indices.map(
+        (i) => i + innerWallsData.positions?.length / 3
+      );
+      innerWallsData.positions.push(...wallData.positions);
+      innerWallsData.indices.push(...indices);
+    });
+
+    innerWallsData.applyToMesh(new Mesh("interior"));
+
     return buildingForm.toMesh("building");
   }
 
-  renderCube(scale: number) {
-    const vertex = [
-      [-0.5, 1, -0.5],
-      [0.5, 1, -0.5],
-      [0.5, 1, 0.5],
-      [-0.5, 1, 0.5],
-      [-0.5, 0, 0.5],
-      [0.5, 0, 0.5],
-      [0.5, 0, -0.5],
-      [-0.5, 0, -0.5],
-    ].map(v => v.map(n => n * scale));
-    const findNeighbour = (v: number[], index: number) =>
-      vertex.findIndex(node =>
-        node.every(
-          (n, i) => (i === index && n !== v[i]) || (i !== index && n === v[i])
-        )
+  private renderBox(vertex: number[][]) {
+    const findNeighbours = (v: number[], coords: number[]) =>
+      vertex.filter(
+        (node) => node !== v && coords.every((i) => node[i] === v[i])
       );
 
     const positions = vertex.flat();
@@ -246,10 +296,25 @@ export class RenderService {
       if (indices.includes(i)) {
         return;
       }
-      const v1 = findNeighbour(v, 0);
-      const v2 = findNeighbour(v, 1);
-      const v3 = findNeighbour(v, 2);
-      indices.push(i, v1, v2, i, v1, v3, i, v2, v3);
+      const level = findNeighbours(v, [1]);
+      const v2 = findNeighbours(v, [0, 2])[0];
+
+      const remoteCorner = level.find((corner) => {
+        const [corner1, corner2] = level.filter(
+          (node) => ![v, corner].includes(node)
+        );
+        return (
+          corner[0] === math.add(corner1[0], corner2[0] - v[0]) &&
+          corner[2] === math.add(corner1[2], corner2[2] - v[2])
+        );
+      });
+
+      const [v1, v3] = level.filter(
+        (corner) => ![v, remoteCorner].includes(corner)
+      );
+      indices.push(
+        ...[v, v1, v2, v, v1, v3, v, v2, v3].map((node) => vertex.indexOf(node))
+      );
     });
 
     const normals: number[] = [];
@@ -257,9 +322,6 @@ export class RenderService {
 
     VertexData.ComputeNormals(positions, indices, normals);
     VertexData._ComputeSides(Mesh.DOUBLESIDE, positions, indices, normals, uvs);
-
-    const customMesh = new Mesh("custom", this.scene);
-
     const vertexData = new VertexData();
 
     vertexData.positions = positions;
@@ -267,19 +329,7 @@ export class RenderService {
     vertexData.normals = normals;
     vertexData.uvs = uvs;
 
-    vertexData.applyToMesh(customMesh);
-
-    const hole = MeshBuilder.CreateBox("hole", {
-      width: 0.5,
-      height: 0.5,
-      depth: 0.5,
-    });
-    hole.position = new Vector3(0, 0, -0.5);
-    const frontHole = CSG.FromMesh(hole);
-    const cube = CSG.FromMesh(customMesh);
-    const cubeWithHole = cube.subtract(frontHole);
-
-    return cubeWithHole.toMesh("", null, this.scene);
+    return vertexData as VertexFullData;
   }
 
   private getCoordinates(vector: Vector): Vector {

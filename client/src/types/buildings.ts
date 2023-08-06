@@ -1,4 +1,4 @@
-import type { Vector } from "@/types/index";
+import type { Position, Vector } from "@/types/index";
 
 type WallWindow = {
   base: number;
@@ -15,4 +15,5 @@ type Wall = {
 };
 export type Building = {
   walls: Wall[];
+  innerWalls: Array<Array<Vector>>;
 };

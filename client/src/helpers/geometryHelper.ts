@@ -1,4 +1,5 @@
 import type { Step, Vector } from "@/types";
+import { Vector3 } from "@babylonjs/core";
 
 export type Rotation = 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315;
 const ROTATIONS = new Map<Rotation, number[][]>([
@@ -80,4 +81,8 @@ export function castTo3DCoordinates(coordinates2D: Vector): Vector {
     y: coordinates2D.z,
     z: coordinates2D.y,
   };
+}
+
+export function getPerpendicular(vector: Vector3) {
+  return new Vector3(vector.z, vector.y, -vector.x);
 }
